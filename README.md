@@ -107,6 +107,66 @@ ThreadPool statistics are logged with each request:
 - Pending work items count
 - Completed work items count
 
+### Real-Time Monitoring with dotnet-counters
+
+`dotnet-counters` is a powerful diagnostic tool that allows you to monitor ThreadPool metrics in real-time. This is particularly useful for observing ThreadPool behavior during load tests.
+
+#### Installation
+
+If you don't have `dotnet-counters` installed, install it globally:
+
+```bash
+dotnet tool install --global dotnet-counters
+```
+
+Or update to the latest version:
+
+```bash
+dotnet tool update --global dotnet-counters
+```
+
+#### Usage
+
+1. Start your application:
+   ```bash
+   dotnet run --project ThreadPoolStarvationDebug
+   ```
+
+2. In a separate terminal, run dotnet-counters to monitor the ThreadPool:
+   ```bash
+   dotnet-counters monitor -n ThreadPoolStarvationDebug --counters System.Runtime[dotnet.thread_pool.queue.length,dotnet.thread_pool.thread.count,dotnet.thread_pool.work_item.count]
+   ```
+
+3. In a third terminal, run load tests (see [Load Testing](#-load-testing) section)
+
+#### Monitored Metrics
+
+| Metric | Description |
+|--------|-------------|
+| `dotnet.thread_pool.queue.length` | Number of work items waiting to be processed by the ThreadPool |
+| `dotnet.thread_pool.thread.count` | Current number of active ThreadPool threads |
+| `dotnet.thread_pool.work_item.count` | Total number of work items that have been processed |
+
+#### What to Look For
+
+- **Queue Length Increase**: A growing queue indicates ThreadPool starvation - work items are queuing up faster than they can be processed
+- **Thread Count at Maximum**: If thread count reaches the maximum and queue length grows, you have ThreadPool starvation
+- **Comparison Between Endpoints**: 
+  - `/api/demo/sync` and `/api/demo/wait` should show high queue length under load
+  - `/api/demo/async` should maintain low queue length with fewer threads
+
+#### Example Output
+
+```
+Press p to pause, r to resume, q to quit.
+    Status: Running
+
+[System.Runtime]
+    dotnet.thread_pool.queue.length                  15
+    dotnet.thread_pool.thread.count                  25
+    dotnet.thread_pool.work_item.count               1,234
+```
+
 ## 📦 Main Dependencies
 
 - **Microsoft.ApplicationInsights.AspNetCore** (2.23.0) - Telemetry and monitoring
@@ -161,4 +221,5 @@ Releases the thread while waiting for the SQL operation (best practice).
 - [ASP.NET Core Best Pratices](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/best-practices?view=aspnetcore-9.0#avoid-blocking-calls)
 - [ThreadPool Class](https://docs.microsoft.com/en-us/dotnet/api/system.threading.threadpool)
 - [Task-based Asynchronous Pattern](https://docs.microsoft.com/en-us/dotnet/standard/asynchronous-programming-patterns/task-based-asynchronous-pattern-tap)
+- [dotnet-counters Documentation](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters)
 
